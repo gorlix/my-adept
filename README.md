@@ -61,7 +61,8 @@ Designed for KDE Plasma shortcuts (`Ctrl` + `Meta` + `Arrows`).
 ## ⚙️ Technical Specifications
 
 - **DPI**: 1600 CPI base.
-- **Scrolling**: Direct 1:1, high-resolution mapping for fluid feel.
+- **Acceleration**: **Quadratic Curve** (Ultra-precise at low speeds, exponential boost for fast flicks).
+- **Scrolling**: Fluid 1:1 mapping with **Hysteresis-based Axis Locking** (Sticky axis memory to prevent drift).
 - **Framework**: QMK Firmware (latest).
 - **Target**: Ploopy Adept (RP2040).
 

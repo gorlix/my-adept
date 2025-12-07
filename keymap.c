@@ -1,4 +1,12 @@
 #include QMK_KEYBOARD_H
+#include <math.h>
+
+// --- SCROLL ORIENTATION STATE ---
+enum scroll_orientations {
+    SCROLL_NONE,
+    SCROLL_VERT,
+    SCROLL_HORZ
+};
 
 // --- CUSTOM KEYCODE DEFINITIONS ---
 enum custom_keycodes {
@@ -33,7 +41,8 @@ int16_t nav_acum_x = 0;
 int16_t nav_acum_y = 0;
 int16_t media_acum_x = 0;
 int16_t media_acum_y = 0;
-uint16_t media_timer = 0;
+
+static uint8_t scroll_dir = SCROLL_NONE;
 
 // --- CONFIGURATION ---
 #define SCROLL_DIVIDER 40     // Lower value = faster scroll
@@ -60,6 +69,7 @@ void scroll_click_finished(tap_dance_state_t *state, void *user_data) {
 
 void scroll_click_reset(tap_dance_state_t *state, void *user_data) {
     is_scroll_mode = false;
+    scroll_dir = SCROLL_NONE; // Reset Hysteresis
 }
 
 // --- MEDIA TAP DANCE ---
@@ -152,6 +162,25 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 // --- POINTING DEVICE LOGIC ---
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
+    // --- MOUSE ACCELERATION ALGORITHM (QUADRATIC) ---
+    // Calculate 2D velocity magnitude (speed)
+    float speed = sqrt(pow(mouse_report.x, 2) + pow(mouse_report.y, 2));
+
+    if (speed > ACCEL_OFFSET) {
+        // Quadratic acceleration formula
+        // Use a smaller divisor (0.001) since we are squaring the speed difference
+        float factor = 1.0f + pow(speed - ACCEL_OFFSET, 2) * 0.001f * ACCEL_SLOPE;
+        
+        // Cap the acceleration factor
+        if (factor > ACCEL_LIMIT) {
+            factor = ACCEL_LIMIT;
+        }
+
+        // Apply scaling
+        mouse_report.x = (int16_t)(mouse_report.x * factor);
+        mouse_report.y = (int16_t)(mouse_report.y * factor);
+    }
+
     // 1. DESKTOP NAVIGATION MODE
     if (is_nav_mode) {
         nav_acum_x += mouse_report.x;
@@ -194,10 +223,47 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     
     // 2. DRAG SCROLL MODE
     else if (is_scroll_mode) {
-        // Fluid Scroll: Map Y-axis directly to Vertical Scroll (v)
-        // Resolution handled by MOUSE_EXTENDED_REPORT properties
-        mouse_report.v = -mouse_report.y;
-        mouse_report.h = mouse_report.x; // Enable Horizontal Scroll
+        // --- SCROLL STRAIGHTENING WITH HYSTERESIS ---
+        int16_t abs_x = abs(mouse_report.x);
+        int16_t abs_y = abs(mouse_report.y);
+
+        // Reset state if motion stops implies intention reset?? 
+        // No, let's keep state unless overridden or timeout.
+        // For simplicity, we just check transitions.
+        
+        if (scroll_dir == SCROLL_NONE) {
+            // Initial Decision
+            if (abs_y > abs_x * SCROLL_STRAIGHT_FACTOR) {
+                scroll_dir = SCROLL_VERT;
+            } else if (abs_x > abs_y * SCROLL_STRAIGHT_FACTOR) {
+                scroll_dir = SCROLL_HORZ;
+            }
+        } 
+        else if (scroll_dir == SCROLL_VERT) {
+            // Breakout check: If Horizontal is HUGE, switch mode
+            if (abs_x > abs_y + SCROLL_UNLOCK_THRESHOLD) {
+                scroll_dir = SCROLL_HORZ;
+            }
+        }
+        else if (scroll_dir == SCROLL_HORZ) {
+            // Breakout check: If Vertical is HUGE, switch mode
+            if (abs_y > abs_x + SCROLL_UNLOCK_THRESHOLD) {
+                scroll_dir = SCROLL_VERT;
+            }
+        }
+        
+        // Apply Locking based on State
+        if (scroll_dir == SCROLL_VERT) {
+             mouse_report.h = 0; // Lock Horizontal
+             mouse_report.v = -mouse_report.y;
+        } else if (scroll_dir == SCROLL_HORZ) {
+             mouse_report.v = 0; // Lock Vertical
+             mouse_report.h = mouse_report.x;
+        } else {
+             // SCROLL_NONE: Free movement (Diagonal)
+             mouse_report.v = -mouse_report.y;
+             mouse_report.h = mouse_report.x;
+        }
 
         // Lock cursor movement
         mouse_report.x = 0;
