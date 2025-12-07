@@ -127,7 +127,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 is_nav_mode = false;
             }
             return false; // Non inviare nulla al PC
-            
+
             return false; // Non inviare nulla al PC
 
         default:
