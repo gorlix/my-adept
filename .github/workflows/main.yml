@@ -1,4 +1,4 @@
-name: Build and Release Adept Firmware
+name: Build and Auto-Release Firmware
 
 on:
   push:
@@ -6,56 +6,62 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # Necessario per creare la Release
+  contents: write  # Fondamentale per creare Tag e Release
 
 jobs:
-  build:
+  build_and_release:
     runs-on: ubuntu-latest
-    container: qmkfm/qmk_cli
-
+    
     steps:
-    - name: Checkout QMK Firmware
+    - name: Checkout Repository
       uses: actions/checkout@v4
       with:
-        repository: qmk/qmk_firmware
+        fetch-depth: 0  # Necessario per leggere la storia dei Tag precedenti e calcolare il numero successivo
         submodules: recursive
-        path: qmk_firmware
 
-    - name: Checkout User Keymap
-      uses: actions/checkout@v4
-      with:
-        path: user_keymap
-
-    - name: Setup Keymap
+    - name: Setup Keymap Files
       run: |
-        # 1. Crea la cartella di destinazione per Ploopy Adept (Madromys)
+        # Checkout di QMK (non usiamo l'azione checkout separata per evitare conflitti di path, lo cloniamo manuale o usiamo la CLI)
+        # Metodo più pulito: Cloniamo QMK in una sottocartella temporanea
+        git clone https://github.com/qmk/qmk_firmware.git qmk_firmware
+        cd qmk_firmware
+        git submodule update --init --recursive
+        cd ..
+
+        # Crea la cartella di destinazione per Ploopy Adept
         mkdir -p qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix
         
-        # 2. Trova dove sono i file keymap nel tuo repo (cerca keymap.c ovunque sia)
-        SRC_DIR=$(find user_keymap -name "keymap.c" -exec dirname {} \; | head -n 1)
+        # Trova i tuoi file sorgente
+        SRC_DIR=$(find . -name "keymap.c" -not -path "./qmk_firmware/*" -exec dirname {} \; | head -n 1)
+        echo "Sorgenti trovati in: $SRC_DIR"
         
-        echo "Found keymap source files in: $SRC_DIR"
-        
-        # 3. Copia i file dalla cartella trovata a quella di QMK
+        # Copia i file
         cp "$SRC_DIR/config.h" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
         cp "$SRC_DIR/keymap.c" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
         cp "$SRC_DIR/rules.mk" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
 
     - name: Compile Firmware
-      working-directory: qmk_firmware
-      run: |
-        # Compila per Ploopy Madromys (il nome in codice dell'Adept)
-        qmk compile -kb ploopyco/madromys -km gorlix
-        
-        # Trova il file .uf2 compilato e rinominalo per la release
-        find . -name "*.uf2" -exec mv {} ploopy_adept_gorlix.uf2 \;
-
-    - name: Publish Release
-      uses: softprops/action-gh-release@v1
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      uses: qmk/qmk_action@v1 # Usiamo l'azione ufficiale QMK per la compilazione, è più stabile
       with:
-        tag_name: latest
-        name: Latest Firmware Build
-        draft: false
-        prerelease: false
-        files: qmk_firmware/ploopy_adept_gorlix.uf2
+        working-dir: qmk_firmware
+        keyboard: ploopyco/madromys
+        keymap: gorlix
+
+    - name: Rename Firmware
+      run: |
+        # Trova il file .uf2 generato e rinominalo
+        find qmk_firmware -name "*.uf2" -exec mv {} ploopy_adept_firmware.uf2 \;
+
+    - name: Calculate Next Version
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        default_bump: patch  # Incrementa sempre l'ultimo numero (es. 1.0.0 -> 1.0.1) se non specificato diversamente
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag_version.outputs.new_tag }}
+        name: Release ${{ steps.tag_version.outputs.new_tag }}
+        files: ploopy_adept_firmware.uf2
