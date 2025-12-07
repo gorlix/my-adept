@@ -163,37 +163,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 // --- POINTING DEVICE LOGIC ---
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
-    // 1. DRAG SCROLL MODE (Priorità Alta, Raw Input)
-    // Moved here to bypass acceleration for linear 1:1 control
-    if (is_scroll_mode) {
-        // --- OMNIDIRECTIONAL SCROLL (NO LOCKING) ---
-        
-        // Accumulate raw input * sensitivity
-        scroll_accum_x += (float)mouse_report.x * SCROLL_SENSITIVITY;
-        scroll_accum_y += (float)mouse_report.y * SCROLL_SENSITIVITY;
+    // 1. DRAG SCROLL MODE (MOVED DOWN TO APPLY ACCEL)
+    // Removed from here to be placed after acceleration
 
-        // Calculate Integer part from Accumulator
-        int8_t v_part = (int8_t)(scroll_accum_y * -1.0f); // Invert Y for Scroll V
-        int8_t h_part = (int8_t)(scroll_accum_x);
-
-        // Assign directly to report (Allow both V and H)
-        mouse_report.v = v_part;
-        mouse_report.h = h_part;
-
-        // Update accumulators by subtracting consumed integer parts
-        if (mouse_report.v != 0) {
-            scroll_accum_y -= (float)(mouse_report.v * -1); 
-        }
-        if (mouse_report.h != 0) {
-            scroll_accum_x -= (float)(mouse_report.h);
-        }
-
-        // Lock cursor movement
-        mouse_report.x = 0;
-        mouse_report.y = 0;
-        
-        return mouse_report; // Return immediately to skip acceleration
-    }
 
     // --- MOUSE ACCELERATION ALGORITHM (QUADRATIC) ---
     // Calculate 2D velocity magnitude (speed)
@@ -254,8 +226,34 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         mouse_report.y = 0;
     }
     
-    // 2. DRAG SCROLL MODE (MOVED UP FOR RAW INPUT)
-    // Removed from here to be placed before acceleration
+    // 2. DRAG SCROLL MODE (ACCELERATED)
+    else if (is_scroll_mode) {
+        // --- OMNIDIRECTIONAL SCROLL (NO LOCKING) ---
+        
+        // Accumulate input (already accelerated) * sensitivity
+        scroll_accum_x += (float)mouse_report.x * SCROLL_SENSITIVITY;
+        scroll_accum_y += (float)mouse_report.y * SCROLL_SENSITIVITY;
+
+        // Calculate Integer part from Accumulator
+        int8_t v_part = (int8_t)(scroll_accum_y * -1.0f); // Invert Y for Scroll V
+        int8_t h_part = (int8_t)(scroll_accum_x);
+
+        // Assign directly to report (Allow both V and H)
+        mouse_report.v = v_part;
+        mouse_report.h = h_part;
+
+        // Update accumulators by subtracting consumed integer parts
+        if (mouse_report.v != 0) {
+            scroll_accum_y -= (float)(mouse_report.v * -1); 
+        }
+        if (mouse_report.h != 0) {
+            scroll_accum_x -= (float)(mouse_report.h);
+        }
+
+        // Lock cursor movement
+        mouse_report.x = 0;
+        mouse_report.y = 0;
+    }
 
 
     // 3. MEDIA CONTROL MODE
