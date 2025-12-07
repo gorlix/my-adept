@@ -28,14 +28,19 @@ jobs:
 
     - name: Setup Keymap
       run: |
-        # Create the keymap directory for Ploopy Adept (Madromys)
+        # 1. Create the destination directory for Ploopy Adept (Madromys)
         mkdir -p qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix
         
-        # Copy your files into the QMK directory
-        # Adjust paths if your files are in a subfolder in your repo
-        cp user_keymap/gorlix/my-adept/my-adept-bf66eb7de804bf9f4e266e256554c8f682116623/config.h qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
-        cp user_keymap/gorlix/my-adept/my-adept-bf66eb7de804bf9f4e266e256554c8f682116623/keymap.c qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
-        cp user_keymap/gorlix/my-adept/my-adept-bf66eb7de804bf9f4e266e256554c8f682116623/rules.mk qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
+        # 2. Find where the keymap files are located in your repo
+        # This searches for 'keymap.c' inside the 'user_keymap' folder
+        SRC_DIR=$(find user_keymap -name "keymap.c" -exec dirname {} \; | head -n 1)
+        
+        echo "Found keymap source files in: $SRC_DIR"
+        
+        # 3. Copy the files dynamically from the found directory
+        cp "$SRC_DIR/config.h" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
+        cp "$SRC_DIR/keymap.c" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
+        cp "$SRC_DIR/rules.mk" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
 
     - name: Compile Firmware
       working-directory: qmk_firmware
@@ -43,8 +48,7 @@ jobs:
         # Compile for Ploopy Madromys (Adept)
         qmk compile -kb ploopyco/madromys -km gorlix
         
-        # Move the output file to a predictable name for the release
-        # The find command ensures we get the file even if QMK names it differently
+        # Find and rename the output file (usually ends in .uf2 for RP2040)
         find . -name "*.uf2" -exec mv {} ploopy_adept_gorlix.uf2 \;
 
     - name: Upload Artifact
