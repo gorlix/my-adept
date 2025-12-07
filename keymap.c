@@ -193,5 +193,34 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         mouse_report.y = 0;
     }
 
+    // 3. MEDIA CONTROL MODE
+    else if (IS_LAYER_ON(_MEDIA)) {
+        media_acum_x += mouse_report.x;
+        media_acum_y += mouse_report.y;
+
+        // Volume (Y-axis)
+        if (media_acum_y > MEDIA_THRESHOLD) {
+            tap_code(KC_VOLD);
+            media_acum_y = 0;
+        } else if (media_acum_y < -MEDIA_THRESHOLD) {
+            tap_code(KC_VOLU);
+            media_acum_y = 0;
+        }
+
+        // Brightness (X-axis)
+        if (media_acum_x > MEDIA_THRESHOLD) {
+            tap_code(KC_BRIU);
+            media_acum_x = 0;
+        } else if (media_acum_x < -MEDIA_THRESHOLD) {
+            tap_code(KC_BRID);
+            media_acum_x = 0;
+        }
+
+        mouse_report.x = 0;
+        mouse_report.y = 0;
+        mouse_report.v = 0;
+        mouse_report.h = 0;
+    }
+
     return mouse_report;
 }
