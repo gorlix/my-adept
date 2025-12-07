@@ -1,0 +1,41 @@
+name: Build Ploopy Adept Firmware
+
+on:
+  # Esegui la compilazione quando fai push su master/main
+  push:
+    branches: [ master, main ]
+    # Attiva solo se cambi file nella cartella keymaps (risparmia risorse)
+    paths:
+      - 'keyboards/ploopyco/trackball/adept/keymaps/**'
+      - 'users/**' # Se usi una userspace
+  # Permette di avviare la compilazione manualmente dalla tab "Actions" di GitHub
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: qmkfm/qmk_cli # Usa il container ufficiale QMK per avere tutte le dipendenze
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive # Necessario se il tuo repo include moduli esterni
+
+    - name: Compile Firmware
+      uses: qmk/qmk_action@v1
+      with:
+        keyboard: ploopyco/trackball/adept
+        # SOSTITUISCI 'default' CON IL NOME DELLA TUA KEYMAP
+        keymap: default 
+        
+    - name: Archive Firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: ploopy_adept_firmware
+        # Il Ploopy Adept usa RP2040, quindi il file è .uf2
+        path: |
+          *.uf2
+          *.hex
+          *.bin
+        if-no-files-found: error
