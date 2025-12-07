@@ -23,7 +23,7 @@ jobs:
         submodules: recursive # Necessario se il tuo repo include moduli esterni
 
     - name: Compile Firmware
-      run: qmk compile -kb ploopyco/madromys/rev1_001 -km gorlix 
+      run: make ploopyco/madromys/rev1_001:gorlix 
         
     - name: Archive Firmware
       uses: actions/upload-artifact@v4
