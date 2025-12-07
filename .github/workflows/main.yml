@@ -23,16 +23,12 @@ jobs:
         submodules: recursive # Necessario se il tuo repo include moduli esterni
 
     - name: Compile Firmware
-      uses: qmk/qmk_action@v1
-      with:
-        keyboard: ploopyco/trackball/adept
-        # SOSTITUISCI 'default' CON IL NOME DELLA TUA KEYMAP
-        keymap: default 
+      run: qmk compile -kb ploopyco/madromys/rev1_001 -km gorlix 
         
     - name: Archive Firmware
       uses: actions/upload-artifact@v4
       with:
-        name: ploopy_adept_firmware
+        name: ploopy_madromys_firmware
         # Il Ploopy Adept usa RP2040, quindi il file è .uf2
         path: |
           *.uf2
