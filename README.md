@@ -1,69 +1,74 @@
-# Ploopy Adept - Custom Firmware
+# Ploopy Adept - Custom "Gorlix" Firmware
 
-This is a highly customized QMK firmware for the Ploopy Adept trackball, designed for advanced productivity on Linux (KDE Plasma) with specific gesture controls.
+This is a highly customized QMK firmware for the **Ploopy Adept** trackball, engineered for maximum productivity on Linux (specifically KDE Plasma). It features gesture-based controls, fluid scrolling, and dedicated media layers.
 
-## ✨ Key Features
+## ✨ Key Features Overview
 
-### 🖱️ Button Layout & Logic
+### 🖱️ Button Layout
 
-| Button Pos | Label | Primary Function (Tap) | Secondary Actions |
-| :--- | :--- | :--- | :--- |
-| **Top Left** | `ZOOM` | **Middle Click** | **Hold**: Smooth Zoom (Ctrl + Scroll)<br>Move Ball Up/Down to Zoom In/Out |
-| **Mid Left** | `SCROLL` | **Middle Click** | **Hold**: Drag Scroll (All Directions)<br>**2x Tap**: Home<br>**3x Tap**: End |
-| **Bot Left** | `BTN 1` | Left Click | - |
-| **Top Right** | `MEDIA` | **Button 4 (Back)** | **Hold**: Media Mode (Vol/Bri)<br>**2x Tap**: Enter **Playback Layer** |
-| **Mid Right** | `BTN 2` | Right Click | - |
-| **Bot Right** | `NAV` | Button 5 (Forward)* | **Hold**: Desktop Navigation |
-
-> *Note: Bottom Right tap function might be customized or defaulting to layer/click depending on specific iteration.*
+| Position | Label | Click (Tap) | Hold (Function) | Double Tap |
+| :--- | :--- | :--- | :--- | :--- |
+| **Top Left** | `ZOOM` | Middle Click | **Smooth Zoom** | - |
+| **Mid Left** | `SCROLL` | Middle Click | **Drag Scroll** | **Home** (2x) / **End** (3x) |
+| **Bot Left** | `LMB` | Left Click | - | - |
+| **Top Right** | `MEDIA` | Button 4 (Back) | **Media Mode** | **Playback Layer** |
+| **Mid Right** | `RMB` | Right Click | - | - |
+| **Bot Right** | `NAV` | Button 5 (Forward) | **Desktop Nav** | - |
 
 ---
 
-### 🎥 Playback Control Layer
-Activated by **Double Tapping** the Top Right Button.
+## 🚀 Detailed Functionality
 
-| Button Pos | Function | Description |
-| :--- | :--- | :--- |
-| **Top Left** | `←` Left Arrow | Rewind 10s (Youtube/VLC default) |
-| **Top Right** | **EXIT** | Return to Base Layer |
-| **Mid Right** | `→` Right Arrow | Forward 10s |
-| **Bot Left** | `⏯` Play/Pause | Toggle Playback |
-| **Ball** | - | *Standard Mouse Movement* |
+### 🔍 Smooth Zoom Mode (Top Left)
+Emulates `Ctrl` + `Scroll Wheel` to provide smooth, pinch-like zooming in browsers and supported applications.
+- **Activation**: Hold the **Top Left** button.
+- **Action**: Move the ball **Up/Down**.
+- **Result**: Smooth Zoom In/Out.
+
+### 📜 Fluid Drag Scroll (Mid Left)
+Leverages QMK's high-resolution scrolling for pixel-perfect navigation.
+- **Activation**: Hold the **Mid Left** button.
+- **Action**: Move the ball in **any direction** (Vertical & Horizontal).
+- **Tap Gestures**:
+    - **1x Tap**: Middle Click (Open/Close Tabs).
+    - **2x Tap**: `HOME` Key (Jump to top).
+    - **3x Tap**: `END` Key (Jump to bottom).
+
+### 🔊 Media Control Mode (Top Right - Hold)
+Adjust system settings without lifting your hand.
+- **Activation**: Hold the **Top Right** button.
+- **Volume**: Move ball **Up/Down**.
+- **Brightness**: Move ball **Left/Right**.
+
+### 🎥 Playback Control Layer (Top Right - Double Tap)
+A dedicated layer for controlling video/music playback.
+- **Activation**: Double-tap the **Top Right** button.
+- **Controls**:
+    - **Top Left**: Rewind 10s (Left Arrow).
+    - **Mid Right**: Forward 10s (Right Arrow).
+    - **Bot Left**: Play/Pause.
+    - **Top Right**: **EXIT** (Return to normal mode).
+
+### 🖥️ Desktop Navigation (Bot Right)
+Designed for KDE Plasma shortcuts (`Ctrl` + `Meta` + `Arrows`).
+- **Activation**: Hold the **Bot Right** button.
+- **Switch Desktop**: Move ball **Left/Right**.
+- **Overview / Mission Control**: Move ball **Up/Down**.
+- *Includes a custom threshold to prevent accidental triggers.*
 
 ---
 
-### 📜 Fluid Drag Scroll (Mid Left Button)
-Powered by QMK High-Resolution Scrolling for pixel-perfect smoothness.
-- **Hold & Move Ball**: Scrolling in **all directions** (Vertical + Horizontal).
-- **Single Click**: Middle Mouse Click (open tabs, close tabs).
-- **Double Click + Hold**: Also activates Drag Scroll.
-- **Triple Click**: Sends `HOME` key (jump to top of page).
-- **Quadruple Click**: Sends `END` key (jump to bottom of page).
+## ⚙️ Technical Specifications
 
----
+- **DPI**: 1600 CPI base.
+- **Scrolling**: Direct 1:1, high-resolution mapping for fluid feel.
+- **Framework**: QMK Firmware (latest).
+- **Target**: Ploopy Adept (RP2040).
 
-### 🖥️ Desktop Navigation (Bot Right Button `DESDESK_NAV`)
-Optimized for KDE Plasma / Linux shortcuts (`Ctrl` + `Meta` + `Arrows`).
-- **Hold & Move Ball Right/Left**: Switch Virtual Desktop (Next/Prev).
-- **Hold & Move Ball Up/Down**: Mission Control / Overview (Present Windows).
-- *Features accelerated threshold logic to prevent accidental triggers.*
+## 🛠️ Compilation & Flashing
 
----
-
-### 🔊 Media Control Mode (Hold Top Right)
-Control your system media without touching the keyboard.
-- **Hold & Move Ball Up/Down**: Volume Up / Down.
-- **Hold & Move Ball Right/Left**: Brightness Up / Down.
-
----
-
-## ⚙️ Customization Details
-
-- **Responsive Scrolling**: Manual quantization removed in favor of direct sensor-to-scroll variable mapping (`mouse_report.v = -mouse_report.y`).
-- **Hi-Res support**: Enabled `MOUSE_EXTENDED_REPORT` and `POINTING_DEVICE_HIRES_SCROLL_ENABLE`.
-- **VIA Disabled**: Disabled to allow for complex C-based logic and custom variables.
-
-## 🛠️ Compilation
+This project uses a GitHub Action workflow to auto-release new firmware versions.
+To compile locally:
 
 ```bash
 qmk compile -kb ploopyco/madromys -km gorlix
