@@ -16,24 +16,25 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Necessario per leggere la storia dei Tag
+        fetch-depth: 0  # Necessario per leggere la storia dei Tag e i messaggi di commit completi
         submodules: recursive
 
     - name: Setup Keymap Files
       run: |
-        # Clona QMK pulito
+        # 1. Clona QMK pulito in una sottocartella
         git clone https://github.com/qmk/qmk_firmware.git qmk_firmware
         cd qmk_firmware
         git submodule update --init --recursive
         cd ..
 
-        # Prepara le cartelle
+        # 2. Prepara le cartelle per Ploopy Adept (Madromys)
         mkdir -p qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix
         
-        # Cerca i tuoi file sorgente (keymap.c) ovunque siano nel repo
+        # 3. Cerca i tuoi file sorgente (keymap.c) escludendo la cartella qmk appena scaricata
         SRC_DIR=$(find . -name "keymap.c" -not -path "./qmk_firmware/*" -exec dirname {} \; | head -n 1)
+        echo "Sorgenti trovati in: $SRC_DIR"
         
-        # Copia i file
+        # 4. Copia i file trovati nella cartella corretta di QMK
         cp "$SRC_DIR/config.h" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
         cp "$SRC_DIR/keymap.c" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
         cp "$SRC_DIR/rules.mk" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
@@ -42,19 +43,32 @@ jobs:
       uses: qmk/qmk_action@v1
       with:
         working-dir: qmk_firmware
-        keyboard: ploopyco/madromys
+        keyboard: ploopyco/madromys # Target corretto per Ploopy Adept
         keymap: gorlix
 
     - name: Rename Firmware
       run: |
-        # Rinomina il file compilato in modo consistente
+        # Trova il file .uf2 generato e rinominalo portandolo nella root
         find qmk_firmware -name "*.uf2" -exec mv {} ploopy_adept_firmware.uf2 \;
 
-    # --- DA QUI IN POI ESEGUE SOLO SE C'È LA PAROLA CHIAVE ---
+    # --- I PASSAGGI SEGUENTI ESEGUONO SOLO SE C'È LA PAROLA CHIAVE "New_Release" ---
+
+    - name: Get Commit Details
+      id: commit_details
+      # Esegue solo se è manuale O se il messaggio contiene la parola chiave
+      if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'New_Release')
+      run: |
+        # Estrae il titolo (la prima riga del messaggio commit)
+        TITLE=$(git log -1 --format=%s)
+        echo "title=$TITLE" >> $GITHUB_OUTPUT
+        
+        # Estrae il corpo (tutto ciò che segue la prima riga vuota) gestendo le righe multiple
+        echo "body<<EOF" >> $GITHUB_OUTPUT
+        git log -1 --format=%b >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Calculate Next Version
       id: tag_version
-      # Esegue SOLO se è un avvio manuale OPPURE se il messaggio contiene "New_Release"
       if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'New_Release')
       uses: mathieudutour/github-tag-action@v6.2
       with:
@@ -63,9 +77,11 @@ jobs:
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
-      # Stessa condizione di sopra: se non calcola la versione, non può fare la release
       if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'New_Release')
       with:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
-        name: Release ${{ steps.tag_version.outputs.new_tag }}
+        # Il titolo sarà: "v1.0.1 - Titolo del tuo commit"
+        name: ${{ steps.tag_version.outputs.new_tag }} - ${{ steps.commit_details.outputs.title }}
+        # Il corpo sarà la descrizione estesa del tuo commit
+        body: ${{ steps.commit_details.outputs.body }}
         files: ploopy_adept_firmware.uf2
