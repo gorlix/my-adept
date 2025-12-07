@@ -1,4 +1,4 @@
-# Ploopy Adept - Custom "Gorlix" Firmware
+# Ploopy Adept - Custom Firmware
 
 This is a highly customized QMK firmware for the **Ploopy Adept** trackball, engineered for maximum productivity on Linux (specifically KDE Plasma). It features gesture-based controls, fluid scrolling, and dedicated media layers.
 
