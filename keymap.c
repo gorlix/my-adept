@@ -1,19 +1,20 @@
 #include QMK_KEYBOARD_H
 
-// Definiamo i keycode custom
+// --- CUSTOM KEYCODE DEFINITIONS ---
 enum custom_keycodes {
     DESDESK_NAV = SAFE_RANGE,
     CUSTOM_DRAG_SCROLL,
     ZOOM_BTN3
 };
 
-// Tap Dance Enum
+// --- TAP DANCE ENUMERATION ---
 enum {
     TD_SCROLL_CLICK,
     TD_MEDIA_CTRL
 };
 
-// Definiamo i layer (usati anche da VIA)
+// --- LAYER DEFINITIONS ---
+// _VIA layers reserved for future configuration
 enum layers {
     _BASE,
     _MEDIA,
@@ -22,7 +23,7 @@ enum layers {
     _VIA3
 };
 
-// Variabili di stato
+// --- STATE VARIABLES ---
 static bool is_nav_mode = false;
 static bool is_scroll_mode = false;
 static bool is_zoom_mode = false;
@@ -34,18 +35,18 @@ int16_t media_acum_x = 0;
 int16_t media_acum_y = 0;
 uint16_t media_timer = 0;
 
-// Configurazione Scroll
-#define SCROLL_DIVIDER 40 // Più basso = scroll più veloce
-#define MEDIA_THRESHOLD 150 // Sensibilità media
+// --- CONFIGURATION ---
+#define SCROLL_DIVIDER 40     // Lower value = faster scroll
+#define MEDIA_THRESHOLD 150   // Sensitivity threshold for media controls
 
 // --- TAP DANCE LOGIC ---
 void scroll_click_finished(tap_dance_state_t *state, void *user_data) {
     if (state->count == 1) {
         if (!state->pressed) {
-            // Tapped once: Middle Click
+            // Single Tap: Standard Middle Click
             tap_code(QK_MOUSE_BUTTON_3);
         } else {
-            // Held: Drag Scroll Mode
+            // Hold: Activate Drag Scroll Mode
             is_scroll_mode = true;
         }
     } else if (state->count == 2) {
@@ -93,32 +94,31 @@ tap_dance_action_t tap_dance_actions[] = {
     [TD_MEDIA_CTRL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, media_click_finished, media_click_reset)
 };
 
-// --- LAYOUT ---
-// Layout richiesto:
-// TL: DESDESK_NAV              TR: Media Button 4 
-// ML: CUSTOM_DRAG_SCROLL       MR: Tasto Destro
-// BL: Tasto Sinistro           BR: Click Rotella
+// --- LAYOUT DEFINITIONS ---
+// TL: Zoom/Mid      TR: Media/Back
+// ML: Drag Scroll   MR: Right Click
+// BL: Left Click    BR: Desktop Nav
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_BASE] = LAYOUT(
-
-        ZOOM_BTN3, TD(TD_MEDIA_CTRL),      // Top Left, Top Right
-        TD(TD_SCROLL_CLICK), QK_MOUSE_BUTTON_2,      // Mid Left, Mid Right
-        QK_MOUSE_BUTTON_1, DESDESK_NAV       // Bot Left, Bot Right
+        ZOOM_BTN3,              TD(TD_MEDIA_CTRL),            // Top Left, Top Right
+        TD(TD_SCROLL_CLICK),    QK_MOUSE_BUTTON_2,            // Mid Left, Mid Right
+        QK_MOUSE_BUTTON_1,      DESDESK_NAV                   // Bot Left, Bot Right
     ),
-    // Layer Media - Trasparente (gestito via codice)
+    
+    // Media Layer - Transparent (handled via C code logic)
     [_MEDIA] = LAYOUT(_______, _______, _______, _______, _______, _______),
     
-    // Layer Playback
+    // Playback Layer - Media Controls
     [_PLAYBACK] = LAYOUT(
-        KC_LEFT,  TO(_BASE),  // Left: -10s, Right: Exit
-        _______,  KC_RIGHT,   // Mid Left: -, Mid Right: +10s
-        KC_MPLY,  _______     // Bot Left: Play/Pause
+        KC_LEFT,  TO(_BASE),  // TL: Rewind 10s   TR: Exit Layer
+        _______,  KC_RIGHT,   // ML: No Action    MR: Forward 10s
+        KC_MPLY,  _______     // BL: Play/Pause   BR: No Action
     ),
     [_VIA2] = LAYOUT(_______, _______, _______, _______, _______, _______),
     [_VIA3] = LAYOUT(_______, _______, _______, _______, _______, _______)
 };
 
-// --- LOGICA DEI TASTI ---
+// --- KEYCODE LOGIC ---
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case DESDESK_NAV:
@@ -129,20 +129,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             } else {
                 is_nav_mode = false;
             }
-            return false; // Non inviare nulla al PC
-
-            return false; // Non inviare nulla al PC
+            return false; // Prevent sending keycode to host
 
         case ZOOM_BTN3:
             if (record->event.pressed) {
                 is_zoom_mode = true;
                 zoom_timer = timer_read();
-                register_code(KC_LCTL); // Hold Control per lo Zoom
+                register_code(KC_LCTL); // Hold Control for Zoom
             } else {
                 is_zoom_mode = false;
                 unregister_code(KC_LCTL); // Release Control
                 if (timer_elapsed(zoom_timer) < TAPPING_TERM) {
-                    tap_code(QK_MOUSE_BUTTON_3); // Middle Click se premuto poco
+                    tap_code(QK_MOUSE_BUTTON_3); // Tap Middle Click if short press
                 }
             }
             return false;
@@ -152,20 +150,19 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
-// --- LOGICA DELLA SFERA ---
-// --- LOGICA DELLA SFERA ---
+// --- POINTING DEVICE LOGIC ---
 // int16_t scroll_acum_y = 0; // Removed for fluid scroll
-// char scroll_acum_x = 0; // Decommenta per scroll orizzontale
+// char scroll_acum_x = 0; // Uncomment for horizontal scroll
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
-    // 1. MODALITÀ NAVIGAZIONE DESKTOP
+    // 1. DESKTOP NAVIGATION MODE
     if (is_nav_mode) {
         nav_acum_x += mouse_report.x;
         nav_acum_y += mouse_report.y;
 
         if (timer_elapsed(last_nav_time) > NAV_COOLDOWN) {
             
-            // Movimento Orizzontale (Desktop DX/SX)
+            // Horizontal Movement (Switch Desktop Next/Prev)
             if (nav_acum_x > NAV_THRESHOLD) {
                 tap_code16(LCTL(LGUI(KC_RIGHT))); 
                 last_nav_time = timer_read();
@@ -178,9 +175,9 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
                 nav_acum_x = 0;
                 nav_acum_y = 0;
             }
-            // Movimento Verticale (Mission Control / Desktop overview)
+            // Vertical Movement (Mission Control / Overview)
             else if (nav_acum_y > NAV_THRESHOLD) {
-                tap_code16(LCTL(LGUI(KC_DOWN))); // O KC_UP a seconda dell'OS
+                tap_code16(LCTL(LGUI(KC_DOWN))); // Or KC_UP depending on OS
                 last_nav_time = timer_read();
                 nav_acum_x = 0;
                 nav_acum_y = 0;
@@ -193,19 +190,19 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
             }
         }
 
-        // Blocca il cursore
+        // Lock cursor movement
         mouse_report.x = 0;
         mouse_report.y = 0;
     }
     
-    // 2. MODALITÀ DRAG SCROLL
+    // 2. DRAG SCROLL MODE
     else if (is_scroll_mode) {
-        // Scroll Fluido: Assegna direttamente il movimento Y allo scroll V
-        // MOUSE_EXTENDED_REPORT e POINTING_DEVICE_HIRES_SCROLL_ENABLE gestiscono la risoluzione
+        // Fluid Scroll: Map Y-axis directly to Vertical Scroll (v)
+        // Resolution handled by MOUSE_EXTENDED_REPORT properties
         mouse_report.v = -mouse_report.y;
-        mouse_report.h = mouse_report.x; // Abilita scroll orizzontale
+        mouse_report.h = mouse_report.x; // Enable Horizontal Scroll
 
-        // Blocca il cursore
+        // Lock cursor movement
         mouse_report.x = 0;
         mouse_report.y = 0;
     }
@@ -241,11 +238,11 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
 
     // 4. ZOOM MODE (Ctrl + Scroll)
     else if (is_zoom_mode) {
-        // Mappa movimento Y a Scroll Verticale (V)
-        // Essendo CTRL premuto, questo diventa Zoom su desktop/browser
+        // Map Y-axis to Vertical Scroll (v)
+        // With Control held, this is interpreted as Zoom by the OS
         mouse_report.v = -mouse_report.y; 
         
-        // Blocca cursore e altri assi
+        // Lock cursor and other axes
         mouse_report.x = 0;
         mouse_report.y = 0;
         mouse_report.h = 0;
