@@ -43,9 +43,12 @@ int16_t media_acum_x = 0;
 int16_t media_acum_y = 0;
 
 static uint8_t scroll_dir = SCROLL_NONE;
+// High-Res Scroll Accumulators
+static float scroll_accum_x = 0.0f;
+static float scroll_accum_y = 0.0f;
 
 // --- CONFIGURATION ---
-#define SCROLL_DIVIDER 40     // Lower value = faster scroll
+// #define SCROLL_DIVIDER 40  // Removed
 #define MEDIA_THRESHOLD 150   // Sensitivity threshold for media controls
 
 // --- TAP DANCE LOGIC ---
@@ -145,10 +148,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 is_zoom_mode = true;
                 zoom_timer = timer_read();
-                register_code(KC_LCTL); // Hold Control for Zoom
+                register_code(KC_LCTL); 
+                register_code(KC_LSFT); // Add Shift for broader browser support (Pinch Zoom emulation)
             } else {
                 is_zoom_mode = false;
-                unregister_code(KC_LCTL); // Release Control
+                unregister_code(KC_LSFT);
+                unregister_code(KC_LCTL); 
                 if (timer_elapsed(zoom_timer) < TAPPING_TERM) {
                     tap_code(QK_MOUSE_BUTTON_3); // Tap Middle Click if short press
                 }
@@ -227,12 +232,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         int16_t abs_x = abs(mouse_report.x);
         int16_t abs_y = abs(mouse_report.y);
 
-        // Reset state if motion stops implies intention reset?? 
-        // No, let's keep state unless overridden or timeout.
-        // For simplicity, we just check transitions.
-        
         if (scroll_dir == SCROLL_NONE) {
-            // Initial Decision
             if (abs_y > abs_x * SCROLL_STRAIGHT_FACTOR) {
                 scroll_dir = SCROLL_VERT;
             } else if (abs_x > abs_y * SCROLL_STRAIGHT_FACTOR) {
@@ -240,29 +240,66 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
             }
         } 
         else if (scroll_dir == SCROLL_VERT) {
-            // Breakout check: If Horizontal is HUGE, switch mode
             if (abs_x > abs_y + SCROLL_UNLOCK_THRESHOLD) {
                 scroll_dir = SCROLL_HORZ;
             }
         }
         else if (scroll_dir == SCROLL_HORZ) {
-            // Breakout check: If Vertical is HUGE, switch mode
             if (abs_y > abs_x + SCROLL_UNLOCK_THRESHOLD) {
                 scroll_dir = SCROLL_VERT;
             }
         }
         
-        // Apply Locking based on State
+        // --- HIGH-RESOLUTION ACCUMULATION ---
+        // Accumulate raw input * sensitivity
+        scroll_accum_x += (float)mouse_report.x * SCROLL_SENSITIVITY;
+        scroll_accum_y += (float)mouse_report.y * SCROLL_SENSITIVITY; // Note: Invert is applied later or logic? 
+        // Standard mouse_report.y is down-positive. Scroll down is naturally negative V in QMK usually? 
+        // Wait, normally we did mouse_report.v = -mouse_report.y. 
+        // So let's accumulate -y to v.
+        
+        // Let's use temporary variables for the "Report" value
+        int8_t report_v = 0;
+        int8_t report_h = 0;
+
+        // Calculate Integer part from Accumulator
+        int8_t v_part = (int8_t)(scroll_accum_y * -1.0f); // Invert Y for Scroll V
+        int8_t h_part = (int8_t)(scroll_accum_x);
+
+        // Apply Locking to the OUTPUT
         if (scroll_dir == SCROLL_VERT) {
-             mouse_report.h = 0; // Lock Horizontal
-             mouse_report.v = -mouse_report.y;
+             report_v = v_part;
+             report_h = 0;
+             // We should also clear the H accumulator to prevent "building up" pressure while locked?
+             // Yes, or at least dampen it. For strict locking, clear it.
+             scroll_accum_x = 0.0f; 
         } else if (scroll_dir == SCROLL_HORZ) {
-             mouse_report.v = 0; // Lock Vertical
-             mouse_report.h = mouse_report.x;
+             report_v = 0;
+             report_h = h_part;
+             scroll_accum_y = 0.0f;
         } else {
-             // SCROLL_NONE: Free movement (Diagonal)
-             mouse_report.v = -mouse_report.y;
-             mouse_report.h = mouse_report.x;
+             // Free movement
+             report_v = v_part;
+             report_h = h_part;
+        }
+
+        // Assign to report
+        mouse_report.v = report_v;
+        mouse_report.h = report_h;
+
+        // Subtract the consumed integer part from the accumulators
+        // Note: We tracked (accum * -1) for V. 
+        // Logic: 
+        // accum_y += raw_y * 0.5. 
+        // output_v = (int)(accum_y * -1).
+        // consumed_y = output_v * -1.
+        // accum_y -= consumed_y.
+        
+        if (mouse_report.v != 0) {
+            scroll_accum_y -= (float)(mouse_report.v * -1); 
+        }
+        if (mouse_report.h != 0) {
+            scroll_accum_x -= (float)(mouse_report.h);
         }
 
         // Lock cursor movement

@@ -16,14 +16,13 @@
 // Movement threshold: accumulated sensitivity to trigger action (100-500)
 #define NAV_THRESHOLD 450 
 
-/* --- Scroll Configuration (Hysteresis) --- */
-// Axis locking factor. 1.5 means Primary axis must be > 1.5x Secondary to lock.
+/* --- Scroll Configuration (Hysteresis & High-Res) --- */
+#define SCROLL_SENSITIVITY 0.5f     // Multiplier for fine-grained scroll speed
 #define SCROLL_STRAIGHT_FACTOR 1.5
-#define SCROLL_UNLOCK_THRESHOLD 30 // Force required to break out of an axis lock0 
+#define SCROLL_UNLOCK_THRESHOLD 30 
+#define POINTING_DEVICE_TASK_THROTTLE_MS 1 // High refresh rate for smooth scroll 
 
-/* --- Scroll Configuration --- */
-// Axis locking factor. 1.5 means Primary axis must be > 1.5x Secondary to lock.
-#define SCROLL_STRAIGHT_FACTOR 1.5
+
 
 // Cooldown: Minimum time (ms) between desktop switches
 #define NAV_COOLDOWN 300 
