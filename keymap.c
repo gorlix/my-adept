@@ -8,13 +8,15 @@ enum custom_keycodes {
 
 // Tap Dance Enum
 enum {
-    TD_SCROLL_CLICK
+    TD_SCROLL_CLICK,
+    TD_MEDIA_CTRL
 };
 
 // Definiamo i layer (usati anche da VIA)
 enum layers {
     _BASE,
-    _VIA1,
+    _MEDIA,
+    _PLAYBACK,
     _VIA2,
     _VIA3
 };
@@ -25,18 +27,30 @@ static bool is_scroll_mode = false;
 static uint16_t last_nav_time = 0;
 int16_t nav_acum_x = 0;
 int16_t nav_acum_y = 0;
+int16_t media_acum_x = 0;
+int16_t media_acum_y = 0;
+uint16_t media_timer = 0;
 
 // Configurazione Scroll
 #define SCROLL_DIVIDER 40 // Più basso = scroll più veloce
+#define MEDIA_THRESHOLD 150 // Sensibilità media
 
 // --- TAP DANCE LOGIC ---
 void scroll_click_finished(tap_dance_state_t *state, void *user_data) {
-    if (state->count == 1 && !state->pressed) {
-        // Tapped once: Middle Click
-        tap_code(QK_MOUSE_BUTTON_3);
-    } else {
-        // Held or double tapped+hold: Drag Scroll Mode
-        is_scroll_mode = true;
+    if (state->count == 1) {
+        if (!state->pressed) {
+            // Tapped once: Middle Click
+            tap_code(QK_MOUSE_BUTTON_3);
+        } else {
+            // Held: Drag Scroll Mode
+            is_scroll_mode = true;
+        }
+    } else if (state->count == 3) {
+        // Triple Tap: Home
+        tap_code(KC_HOME);
+    } else if (state->count == 4) {
+        // Quad Tap: End
+        tap_code(KC_END);
     }
 }
 
