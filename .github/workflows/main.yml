@@ -3,7 +3,7 @@ name: Build and Auto-Release Firmware
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:
+  workflow_dispatch: # Permette di avviare manualmente la release se serve
 
 permissions:
   contents: write  # Fondamentale per creare Tag e Release
@@ -16,24 +16,22 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Necessario per leggere la storia dei Tag precedenti e calcolare il numero successivo
+        fetch-depth: 0  # Necessario per leggere la storia dei Tag
         submodules: recursive
 
     - name: Setup Keymap Files
       run: |
-        # Checkout di QMK (non usiamo l'azione checkout separata per evitare conflitti di path, lo cloniamo manuale o usiamo la CLI)
-        # Metodo più pulito: Cloniamo QMK in una sottocartella temporanea
+        # Clona QMK pulito
         git clone https://github.com/qmk/qmk_firmware.git qmk_firmware
         cd qmk_firmware
         git submodule update --init --recursive
         cd ..
 
-        # Crea la cartella di destinazione per Ploopy Adept
+        # Prepara le cartelle
         mkdir -p qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix
         
-        # Trova i tuoi file sorgente
+        # Cerca i tuoi file sorgente (keymap.c) ovunque siano nel repo
         SRC_DIR=$(find . -name "keymap.c" -not -path "./qmk_firmware/*" -exec dirname {} \; | head -n 1)
-        echo "Sorgenti trovati in: $SRC_DIR"
         
         # Copia i file
         cp "$SRC_DIR/config.h" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
@@ -41,7 +39,7 @@ jobs:
         cp "$SRC_DIR/rules.mk" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
 
     - name: Compile Firmware
-      uses: qmk/qmk_action@v1 # Usiamo l'azione ufficiale QMK per la compilazione, è più stabile
+      uses: qmk/qmk_action@v1
       with:
         working-dir: qmk_firmware
         keyboard: ploopyco/madromys
@@ -49,18 +47,24 @@ jobs:
 
     - name: Rename Firmware
       run: |
-        # Trova il file .uf2 generato e rinominalo
+        # Rinomina il file compilato in modo consistente
         find qmk_firmware -name "*.uf2" -exec mv {} ploopy_adept_firmware.uf2 \;
+
+    # --- DA QUI IN POI ESEGUE SOLO SE C'È LA PAROLA CHIAVE ---
 
     - name: Calculate Next Version
       id: tag_version
+      # Esegue SOLO se è un avvio manuale OPPURE se il messaggio contiene "New_Release"
+      if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'New_Release')
       uses: mathieudutour/github-tag-action@v6.2
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        default_bump: patch  # Incrementa sempre l'ultimo numero (es. 1.0.0 -> 1.0.1) se non specificato diversamente
+        default_bump: patch
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
+      # Stessa condizione di sopra: se non calcola la versione, non può fare la release
+      if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'New_Release')
       with:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
         name: Release ${{ steps.tag_version.outputs.new_tag }}
