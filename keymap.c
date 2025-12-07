@@ -58,24 +58,59 @@ void scroll_click_reset(tap_dance_state_t *state, void *user_data) {
     is_scroll_mode = false;
 }
 
+// --- MEDIA TAP DANCE ---
+void media_click_finished(tap_dance_state_t *state, void *user_data) {
+    if (state->count == 1) {
+        if (!state->pressed) {
+            // Single Tap: Button 4 (Back)
+            tap_code(QK_MOUSE_BUTTON_4);
+        } else {
+            // Hold: Media Layer (Momentary)
+            layer_on(_MEDIA);
+            media_acum_x = 0;
+            media_acum_y = 0;
+        }
+    } else if (state->count == 2) {
+        if (!state->pressed) {
+             // Double Tap: Switch to Playback Layer (Toggle/One-shot logic if needed, user requested change layer)
+             layer_on(_PLAYBACK);
+        }
+    }
+}
+
+void media_click_reset(tap_dance_state_t *state, void *user_data) {
+    // Always turn off temporary media layer on release
+    if (IS_LAYER_ON(_MEDIA)) {
+        layer_off(_MEDIA);
+    }
+}
+
 tap_dance_action_t tap_dance_actions[] = {
-    [TD_SCROLL_CLICK] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, scroll_click_finished, scroll_click_reset)
+    [TD_SCROLL_CLICK] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, scroll_click_finished, scroll_click_reset),
+    [TD_MEDIA_CTRL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, media_click_finished, media_click_reset)
 };
 
 // --- LAYOUT ---
 // Layout richiesto:
-// TL: DESDESK_NAV    TR: <da valutare> (metto KC_BTN4/, DESDESK_NAV    Back)
-// ML: CUSTOM_DRAG_SCROLL    MR: Tasto Destro
-// BL: Tasto Sinistro BR: Click Rotella
+// TL: DESDESK_NAV              TR: Media Button 4 
+// ML: CUSTOM_DRAG_SCROLL       MR: Tasto Destro
+// BL: Tasto Sinistro           BR: Click Rotella
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_BASE] = LAYOUT(
 
-        QK_MOUSE_BUTTON_3, QK_MOUSE_BUTTON_4,      // Top Left, Top Right
+        QK_MOUSE_BUTTON_3, TD(TD_MEDIA_CTRL),      // Top Left, Top Right
         TD(TD_SCROLL_CLICK), QK_MOUSE_BUTTON_2,      // Mid Left, Mid Right
         QK_MOUSE_BUTTON_1, DESDESK_NAV       // Bot Left, Bot Right
     ),
-    // Layer vuoti per VIA
-    [_VIA1] = LAYOUT(_______, _______, _______, _______, _______, _______),
+    // Layer Media - Trasparente (gestito via codice)
+    [_MEDIA] = LAYOUT(_______, _______, _______, _______, _______, _______),
+    
+    // Layer Playback
+    [_PLAYBACK] = LAYOUT(
+        KC_LEFT,  TO(_BASE),  // Left: -10s, Right: Exit
+        _______,  KC_RIGHT,   // Mid Left: -, Mid Right: +10s
+        KC_MPLY,  _______     // Bot Left: Play/Pause
+    ),
     [_VIA2] = LAYOUT(_______, _______, _______, _______, _______, _______),
     [_VIA3] = LAYOUT(_______, _______, _______, _______, _______, _______)
 };
