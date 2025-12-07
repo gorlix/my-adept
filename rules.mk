@@ -1,20 +1,20 @@
-# Abilita il supporto VIA (per rimappare i tasti base da interfaccia grafica)
+# Enable VIA support (Disabled to prioritize custom C logic)
 VIA_ENABLE = no
 
-# Abilita la gestione avanzata del sensore (NECESSARIO per la tua funzione desktop)
+# Enable advanced Pointing Device features (Required for trackball support)
 POINTING_DEVICE_ENABLE = yes
 
-# Abilita i tasti mouse e le macro tastiera
+# Enable Mouse Keys and Keyboard Macros
 MOUSEKEY_ENABLE = yes
 
-# Abilita il supporto specifico per il Drag Scroll di Ploopy
+# Disable native Ploopy Drag Scroll (Using custom implementation in keymap.c)
 PLOOPY_DRAGSCROLL_ENABLE = no
 
-# Opzionale: riduce la dimensione del firmware se non usi funzionalità RGB o audio
+# Enable Link Time Optimization (Reduces firmware size)
 LTO_ENABLE = yes
 
-# Abilita High-Resolution Scrolling
+# Enable High-Resolution Mouse Report Structure
 MOUSE_EXTENDED_REPORT = yes
 
-# Abilita Tap Dance
+# Enable Tap Dance Feature
 TAP_DANCE_ENABLE = yes

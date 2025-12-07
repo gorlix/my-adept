@@ -151,9 +151,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 }
 
 // --- POINTING DEVICE LOGIC ---
-// int16_t scroll_acum_y = 0; // Removed for fluid scroll
-// char scroll_acum_x = 0; // Uncomment for horizontal scroll
-
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     // 1. DESKTOP NAVIGATION MODE
     if (is_nav_mode) {
