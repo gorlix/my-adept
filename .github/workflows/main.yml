@@ -1,37 +1,48 @@
 name: Build Ploopy Adept Firmware
 
 on:
-  # Esegui la compilazione quando fai push su master/main
   push:
-    branches: [ master, main ]
-    # Attiva solo se cambi file nella cartella keymaps (risparmia risorse)
-    paths:
-      - 'keyboards/ploopyco/trackball/adept/keymaps/**'
-      - 'users/**' # Se usi una userspace
-  # Permette di avviare la compilazione manualmente dalla tab "Actions" di GitHub
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: qmkfm/qmk_cli # Usa il container ufficiale QMK per avere tutte le dipendenze
+    container: qmkfm/qmk_cli # Uses the official QMK container
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout QMK Firmware
       uses: actions/checkout@v4
       with:
-        submodules: recursive # Necessario se il tuo repo include moduli esterni
+        repository: qmk/qmk_firmware
+        submodules: recursive
+        path: qmk_firmware
+
+    - name: Checkout User Keymap
+      uses: actions/checkout@v4
+      with:
+        path: user_keymap
+
+    - name: Setup Keymap Directory
+      run: |
+        # Create the correct directory for the Ploopy Adept
+        mkdir -p qmk_firmware/keyboards/ploopyco/trackball/adept/keymaps/gorlix
+        
+        # Copy your config, rules, and keymap files into the QMK tree
+        cp user_keymap/config.h qmk_firmware/keyboards/ploopyco/trackball/adept/keymaps/gorlix/
+        cp user_keymap/keymap.c qmk_firmware/keyboards/ploopyco/trackball/adept/keymaps/gorlix/
+        cp user_keymap/rules.mk qmk_firmware/keyboards/ploopyco/trackball/adept/keymaps/gorlix/
 
     - name: Compile Firmware
-      run: make ploopyco/madromys/rev1_001:gorlix 
-        
+      working-directory: qmk_firmware
+      # Corrected target: 'ploopyco/trackball/adept' instead of 'ploopyco/madromys'
+      run: make ploopyco/trackball/adept:gorlix
+
     - name: Archive Firmware
       uses: actions/upload-artifact@v4
       with:
-        name: ploopy_madromys_firmware
-        # Il Ploopy Adept usa RP2040, quindi il file è .uf2
+        name: ploopy_adept_firmware
         path: |
-          *.uf2
-          *.hex
-          *.bin
-        if-no-files-found: error
+          qmk_firmware/*.uf2
+          qmk_firmware/*.hex
+          qmk_firmware/*.bin
