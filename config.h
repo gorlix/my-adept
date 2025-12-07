@@ -17,7 +17,7 @@
 #define NAV_THRESHOLD 450 
 
 /* --- Scroll Configuration (Hysteresis & High-Res) --- */
-#define SCROLL_SENSITIVITY 0.5f     // Multiplier for fine-grained scroll speed
+#define SCROLL_SENSITIVITY 0.25f    // Multiplier for fine-grained scroll speed
 #define SCROLL_STRAIGHT_FACTOR 1.5
 #define SCROLL_UNLOCK_THRESHOLD 30 
 #define POINTING_DEVICE_TASK_THROTTLE_MS 1 // High refresh rate for smooth scroll 

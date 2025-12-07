@@ -14,10 +14,8 @@ Ottimizzato per power user **Linux (KDE Plasma/Wayland)**, con un focus su navig
 ### Scrolling Fluido ad Alta Risoluzione
 - **Accumulatori Float**: I calcoli di scorrimento utilizzano matematica in virgola mobile per una precisione sub-pixel.
 - **Sensibilità Scroll**: Calibrata a **0.5x** indipendentemente dai DPI del cursore, garantendo una navigazione web estremamente fluida ("buttery smooth").
-- **Blocco Assi Intelligente (Isteresi)**:
-    - Rileva automaticamente se stai scorrendo in Verticale o Orizzontale.
-    - "Blocca" l'asse per prevenire derive diagonali accidentali.
-    - Utilizza memoria di **Isteresi**: una volta bloccato, rimane tale finché non forzi intenzionalmente il cambio direzione.
+- **Scrolling Omnidirezionale**:
+    - Supporto completo per lo scorrimento 2D (Verticale e Orizzontale simultaneo).
  
 ### Controlli Gestuali e Zoom
 - **Zoom Fluido / Emulazione Pinch**:

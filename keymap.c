@@ -2,11 +2,7 @@
 #include <math.h>
 
 // --- SCROLL ORIENTATION STATE ---
-enum scroll_orientations {
-    SCROLL_NONE,
-    SCROLL_VERT,
-    SCROLL_HORZ
-};
+// (Removed for Omnidirectional Scroll)
 
 // --- CUSTOM KEYCODE DEFINITIONS ---
 enum custom_keycodes {
@@ -42,7 +38,7 @@ int16_t nav_acum_y = 0;
 int16_t media_acum_x = 0;
 int16_t media_acum_y = 0;
 
-static uint8_t scroll_dir = SCROLL_NONE;
+// static uint8_t scroll_dir = SCROLL_NONE; // Removed
 // High-Res Scroll Accumulators
 static float scroll_accum_x = 0.0f;
 static float scroll_accum_y = 0.0f;
@@ -72,7 +68,7 @@ void scroll_click_finished(tap_dance_state_t *state, void *user_data) {
 
 void scroll_click_reset(tap_dance_state_t *state, void *user_data) {
     is_scroll_mode = false;
-    scroll_dir = SCROLL_NONE; // Reset Hysteresis
+    // scroll_dir = SCROLL_NONE; // Reset Hysteresis (Removed)
 }
 
 // --- MEDIA TAP DANCE ---
@@ -167,6 +163,38 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 // --- POINTING DEVICE LOGIC ---
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
+    // 1. DRAG SCROLL MODE (Priorità Alta, Raw Input)
+    // Moved here to bypass acceleration for linear 1:1 control
+    if (is_scroll_mode) {
+        // --- OMNIDIRECTIONAL SCROLL (NO LOCKING) ---
+        
+        // Accumulate raw input * sensitivity
+        scroll_accum_x += (float)mouse_report.x * SCROLL_SENSITIVITY;
+        scroll_accum_y += (float)mouse_report.y * SCROLL_SENSITIVITY;
+
+        // Calculate Integer part from Accumulator
+        int8_t v_part = (int8_t)(scroll_accum_y * -1.0f); // Invert Y for Scroll V
+        int8_t h_part = (int8_t)(scroll_accum_x);
+
+        // Assign directly to report (Allow both V and H)
+        mouse_report.v = v_part;
+        mouse_report.h = h_part;
+
+        // Update accumulators by subtracting consumed integer parts
+        if (mouse_report.v != 0) {
+            scroll_accum_y -= (float)(mouse_report.v * -1); 
+        }
+        if (mouse_report.h != 0) {
+            scroll_accum_x -= (float)(mouse_report.h);
+        }
+
+        // Lock cursor movement
+        mouse_report.x = 0;
+        mouse_report.y = 0;
+        
+        return mouse_report; // Return immediately to skip acceleration
+    }
+
     // --- MOUSE ACCELERATION ALGORITHM (QUADRATIC) ---
     // Calculate 2D velocity magnitude (speed)
     float speed = sqrt(pow(mouse_report.x, 2) + pow(mouse_report.y, 2));
@@ -226,86 +254,9 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         mouse_report.y = 0;
     }
     
-    // 2. DRAG SCROLL MODE
-    else if (is_scroll_mode) {
-        // --- SCROLL STRAIGHTENING WITH HYSTERESIS ---
-        int16_t abs_x = abs(mouse_report.x);
-        int16_t abs_y = abs(mouse_report.y);
+    // 2. DRAG SCROLL MODE (MOVED UP FOR RAW INPUT)
+    // Removed from here to be placed before acceleration
 
-        if (scroll_dir == SCROLL_NONE) {
-            if (abs_y > abs_x * SCROLL_STRAIGHT_FACTOR) {
-                scroll_dir = SCROLL_VERT;
-            } else if (abs_x > abs_y * SCROLL_STRAIGHT_FACTOR) {
-                scroll_dir = SCROLL_HORZ;
-            }
-        } 
-        else if (scroll_dir == SCROLL_VERT) {
-            if (abs_x > abs_y + SCROLL_UNLOCK_THRESHOLD) {
-                scroll_dir = SCROLL_HORZ;
-            }
-        }
-        else if (scroll_dir == SCROLL_HORZ) {
-            if (abs_y > abs_x + SCROLL_UNLOCK_THRESHOLD) {
-                scroll_dir = SCROLL_VERT;
-            }
-        }
-        
-        // --- HIGH-RESOLUTION ACCUMULATION ---
-        // Accumulate raw input * sensitivity
-        scroll_accum_x += (float)mouse_report.x * SCROLL_SENSITIVITY;
-        scroll_accum_y += (float)mouse_report.y * SCROLL_SENSITIVITY; // Note: Invert is applied later or logic? 
-        // Standard mouse_report.y is down-positive. Scroll down is naturally negative V in QMK usually? 
-        // Wait, normally we did mouse_report.v = -mouse_report.y. 
-        // So let's accumulate -y to v.
-        
-        // Let's use temporary variables for the "Report" value
-        int8_t report_v = 0;
-        int8_t report_h = 0;
-
-        // Calculate Integer part from Accumulator
-        int8_t v_part = (int8_t)(scroll_accum_y * -1.0f); // Invert Y for Scroll V
-        int8_t h_part = (int8_t)(scroll_accum_x);
-
-        // Apply Locking to the OUTPUT
-        if (scroll_dir == SCROLL_VERT) {
-             report_v = v_part;
-             report_h = 0;
-             // We should also clear the H accumulator to prevent "building up" pressure while locked?
-             // Yes, or at least dampen it. For strict locking, clear it.
-             scroll_accum_x = 0.0f; 
-        } else if (scroll_dir == SCROLL_HORZ) {
-             report_v = 0;
-             report_h = h_part;
-             scroll_accum_y = 0.0f;
-        } else {
-             // Free movement
-             report_v = v_part;
-             report_h = h_part;
-        }
-
-        // Assign to report
-        mouse_report.v = report_v;
-        mouse_report.h = report_h;
-
-        // Subtract the consumed integer part from the accumulators
-        // Note: We tracked (accum * -1) for V. 
-        // Logic: 
-        // accum_y += raw_y * 0.5. 
-        // output_v = (int)(accum_y * -1).
-        // consumed_y = output_v * -1.
-        // accum_y -= consumed_y.
-        
-        if (mouse_report.v != 0) {
-            scroll_accum_y -= (float)(mouse_report.v * -1); 
-        }
-        if (mouse_report.h != 0) {
-            scroll_accum_x -= (float)(mouse_report.h);
-        }
-
-        // Lock cursor movement
-        mouse_report.x = 0;
-        mouse_report.y = 0;
-    }
 
     // 3. MEDIA CONTROL MODE
     else if (IS_LAYER_ON(_MEDIA)) {
