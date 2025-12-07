@@ -3,7 +3,8 @@
 // Definiamo i keycode custom
 enum custom_keycodes {
     DESDESK_NAV = SAFE_RANGE,
-    CUSTOM_DRAG_SCROLL
+    CUSTOM_DRAG_SCROLL,
+    ZOOM_BTN3
 };
 
 // Tap Dance Enum
@@ -24,7 +25,9 @@ enum layers {
 // Variabili di stato
 static bool is_nav_mode = false;
 static bool is_scroll_mode = false;
+static bool is_zoom_mode = false;
 static uint16_t last_nav_time = 0;
+static uint16_t zoom_timer = 0;
 int16_t nav_acum_x = 0;
 int16_t nav_acum_y = 0;
 int16_t media_acum_x = 0;
@@ -45,11 +48,11 @@ void scroll_click_finished(tap_dance_state_t *state, void *user_data) {
             // Held: Drag Scroll Mode
             is_scroll_mode = true;
         }
-    } else if (state->count == 3) {
-        // Triple Tap: Home
+    } else if (state->count == 2) {
+        // Double Tap: Home
         tap_code(KC_HOME);
-    } else if (state->count == 4) {
-        // Quad Tap: End
+    } else if (state->count == 3) {
+        // Triple Tap: End
         tap_code(KC_END);
     }
 }
@@ -98,7 +101,7 @@ tap_dance_action_t tap_dance_actions[] = {
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_BASE] = LAYOUT(
 
-        QK_MOUSE_BUTTON_3, TD(TD_MEDIA_CTRL),      // Top Left, Top Right
+        ZOOM_BTN3, TD(TD_MEDIA_CTRL),      // Top Left, Top Right
         TD(TD_SCROLL_CLICK), QK_MOUSE_BUTTON_2,      // Mid Left, Mid Right
         QK_MOUSE_BUTTON_1, DESDESK_NAV       // Bot Left, Bot Right
     ),
@@ -129,6 +132,20 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             return false; // Non inviare nulla al PC
 
             return false; // Non inviare nulla al PC
+
+        case ZOOM_BTN3:
+            if (record->event.pressed) {
+                is_zoom_mode = true;
+                zoom_timer = timer_read();
+                register_code(KC_LCTL); // Hold Control per lo Zoom
+            } else {
+                is_zoom_mode = false;
+                unregister_code(KC_LCTL); // Release Control
+                if (timer_elapsed(zoom_timer) < TAPPING_TERM) {
+                    tap_code(QK_MOUSE_BUTTON_3); // Middle Click se premuto poco
+                }
+            }
+            return false;
 
         default:
             return true;
@@ -219,6 +236,18 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         mouse_report.x = 0;
         mouse_report.y = 0;
         mouse_report.v = 0;
+        mouse_report.h = 0;
+    }
+
+    // 4. ZOOM MODE (Ctrl + Scroll)
+    else if (is_zoom_mode) {
+        // Mappa movimento Y a Scroll Verticale (V)
+        // Essendo CTRL premuto, questo diventa Zoom su desktop/browser
+        mouse_report.v = -mouse_report.y; 
+        
+        // Blocca cursore e altri assi
+        mouse_report.x = 0;
+        mouse_report.y = 0;
         mouse_report.h = 0;
     }
 

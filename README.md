@@ -8,8 +8,8 @@ This is a highly customized QMK firmware for the Ploopy Adept trackball, designe
 
 | Button Pos | Label | Primary Function (Tap) | Secondary Actions |
 | :--- | :--- | :--- | :--- |
-| **Top Left** | `BTN 3` | Middle Click | - |
-| **Mid Left** | `SCROLL` | **Middle Click** | **Hold**: Drag Scroll (All Directions)<br>**3x Tap**: Home<br>**4x Tap**: End |
+| **Top Left** | `ZOOM` | **Middle Click** | **Hold**: Smooth Zoom (Ctrl + Scroll)<br>Move Ball Up/Down to Zoom In/Out |
+| **Mid Left** | `SCROLL` | **Middle Click** | **Hold**: Drag Scroll (All Directions)<br>**2x Tap**: Home<br>**3x Tap**: End |
 | **Bot Left** | `BTN 1` | Left Click | - |
 | **Top Right** | `MEDIA` | **Button 4 (Back)** | **Hold**: Media Mode (Vol/Bri)<br>**2x Tap**: Enter **Playback Layer** |
 | **Mid Right** | `BTN 2` | Right Click | - |
