@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # Required to create Releases
+  contents: write  # Necessario per creare la Release
 
 jobs:
   build:
@@ -28,16 +28,15 @@ jobs:
 
     - name: Setup Keymap
       run: |
-        # 1. Create the destination directory for Ploopy Adept (Madromys)
+        # 1. Crea la cartella di destinazione per Ploopy Adept (Madromys)
         mkdir -p qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix
         
-        # 2. Find where the keymap files are located in your repo
-        # This searches for 'keymap.c' inside the 'user_keymap' folder
+        # 2. Trova dove sono i file keymap nel tuo repo (cerca keymap.c ovunque sia)
         SRC_DIR=$(find user_keymap -name "keymap.c" -exec dirname {} \; | head -n 1)
         
         echo "Found keymap source files in: $SRC_DIR"
         
-        # 3. Copy the files dynamically from the found directory
+        # 3. Copia i file dalla cartella trovata a quella di QMK
         cp "$SRC_DIR/config.h" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
         cp "$SRC_DIR/keymap.c" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
         cp "$SRC_DIR/rules.mk" qmk_firmware/keyboards/ploopyco/madromys/keymaps/gorlix/
@@ -45,18 +44,11 @@ jobs:
     - name: Compile Firmware
       working-directory: qmk_firmware
       run: |
-        # Compile for Ploopy Madromys (Adept)
+        # Compila per Ploopy Madromys (il nome in codice dell'Adept)
         qmk compile -kb ploopyco/madromys -km gorlix
         
-        # Find and rename the output file (usually ends in .uf2 for RP2040)
+        # Trova il file .uf2 compilato e rinominalo per la release
         find . -name "*.uf2" -exec mv {} ploopy_adept_gorlix.uf2 \;
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ploopy_adept_firmware
-        path: qmk_firmware/ploopy_adept_gorlix.uf2
-        if-no-files-found: error
 
     - name: Publish Release
       uses: softprops/action-gh-release@v1
@@ -67,4 +59,3 @@ jobs:
         draft: false
         prerelease: false
         files: qmk_firmware/ploopy_adept_gorlix.uf2
-        overwrite: true
