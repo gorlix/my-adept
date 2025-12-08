@@ -1,9 +1,6 @@
 #include QMK_KEYBOARD_H
 #include <math.h>
 
-// --- SCROLL ORIENTATION STATE ---
-// (Removed for Omnidirectional Scroll)
-
 // --- CUSTOM KEYCODE DEFINITIONS ---
 enum custom_keycodes {
     DESDESK_NAV = SAFE_RANGE,

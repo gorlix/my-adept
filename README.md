@@ -1,68 +1,84 @@
-# Ploopy Adept - Firmware Custom
+# Ploopy Adept - Advanced Firmware
 
-Un firmware QMK avanzato progettato per il trackball **Ploopy Adept**.
-Ottimizzato per power user **Linux (KDE Plasma/Wayland)**, con un focus su navigazione fluida, controllo gestuale e precisione assoluta.
+An advanced QMK firmware designed for the **Ploopy Adept** trackball.
+Optimized for **Linux (KDE Plasma/Wayland)** power users, focusing on fluid navigation, gesture control, and absolute precision.
 
-## Funzionalità Principali
+## Key Features
 
-### Motore di Movimento Avanzato
-- **Accelerazione Quadratica**: Sostituisce l'accelerazione lineare standard con una curva quadratica personalizzata (`speed^2`).
-    - *Bassa Velocità*: Tracciamento ultra-preciso 1:1 per editing pixel-perfect.
-    - *Alta Velocità*: Boost esponenziale che permette di attraversare schermi 4K con un singolo "flick".
-- **Base 1600 CPI**: Logica nativa ad alta risoluzione per la massima reattività.
+### Advanced Motion Engine
+- **Quadratic Acceleration**: Replaces standard linear acceleration with a custom quadratic curve (`speed^2`).
+    - *Low Speed*: Ultra-precise 1:1 tracking for pixel-perfect editing.
+    - *High Speed*: Exponential boost allowing you to cross 4K screens with a single "flick".
+- **Base 1600 CPI**: Native high-resolution logic for maximum responsiveness.
 
-### Scrolling Fluido ad Alta Risoluzione
-- **Accumulatori Float**: I calcoli di scorrimento utilizzano matematica in virgola mobile per una precisione sub-pixel.
-- **Sensibilità Scroll**: Calibrata a **0.5x** indipendentemente dai DPI del cursore, garantendo una navigazione web estremamente fluida ("buttery smooth").
-- **Scrolling Omnidirezionale**:
-    - Supporto completo per lo scorrimento 2D (Verticale e Orizzontale simultaneo).
- 
-### Controlli Gestuali e Zoom
-- **Zoom Fluido / Emulazione Pinch**:
-    - Tieni premuto il tasto **Top Left** per entrare in modalità Zoom.
-    - Emula `Ctrl + Shift + Scroll` (standard Libinput Pinch Zoom).
-    - Funziona nativamente nei browser (Firefox/Chrome) e app di design per uno zoom fluido reale.
+### Smooth High-Resolution Scrolling
+- **Float Accumulators**: Scroll calculations use floating-point math for sub-pixel precision.
+- **Tuned Sensitivity**: Calibrated to **0.9x** (independent of cursor DPI), ensuring "buttery smooth" web navigation.
+- **Omnidirectional Scrolling**:
+    - Full support for 2D scrolling (Simultaneous Vertical and Horizontal).
+    - Unlocked axes for natural diagonal movement.
 
-### Navigazione Desktop e Media
-- **Desktop Switcher**: Tieni premuto **Bot Right** (`NAV`) e lancia la sfera a Sinistra/Destra per cambiare desktop virtuali (standard KDE).
-- **Mission Control**: Tieni `NAV` e lancia Su/Giù per la panoramica finestre.
-- **Media Mode**: Tieni premuto **Top Right** (`MEDIA`) per controllare Volume (Su/Giù) o Luminosità (Sinistra/Destra).
+### Gesture Controls & Zoom
+- **Fluid Zoom / Pinch Emulation**:
+    - Hold **Top Left** to enter Zoom Mode.
+    - Emulates `Ctrl + Shift + Scroll` (Standard Libinput Pinch Zoom).
+    - Works natively in browsers (Firefox/Chrome) and design apps for real fluid zooming.
+    
+### Desktop & Media Navigation
+- **Desktop Switcher**: Hold **Bot Right** (`NAV`) and flick the ball Left/Right to switch virtual desktops (Standard KDE shortcuts).
+- **Mission Control**: Hold `NAV` and flick Up/Down for window overview.
+- **Media Mode**: Hold **Top Right** (`MEDIA`) to control Volume (Up/Down) or Brightness (Left/Right) via ball movement.
 
 ---
 
-## Layout Tasti
+## 🆚 Differences vs Base Firmware
 
-| Posizione | Etichetta | Tap (Click) | Hold (Funzione) | Doppio Tap |
+This keymap introduces significant logic changes compared to the stock Ploopy firmware:
+
+| Feature | Base Firmware | **This Custom Firmware** |
+| :--- | :--- | :--- |
+| **Acceleration** | Custom QMK Accel or None | **Quadratic Curve** (Math-based `v^2`) for distinct low/high speed profiles. |
+| **Drag Scroll** | Standard QMK (Integer based, Axis Locking) | **Float-based Omnidirectional**: Smoother, supports diagonal scrolling, uses accumulators for high-res feel. |
+| **Zoom** | Button Mapped or Key combo | **Ball-driven Zoom**: Turns the trackball into a precision zoom dial. |
+| **Navigation** | Buttons | **Gesture Based**: Uses ball flicks for Desktop/Window management. |
+| **Media Control**| Buttons / Layer | **Gesture Based**: Uses ball movement for intuitive Volume/Brightness control. |
+| **Layout** | Static Layers | **Tap-Dance Heavy**: Buttons perform dual roles (Tap/Hold/Double-Tap) to maximize the 6-button layout. |
+
+---
+
+## Button Layout
+
+| Position | Label | Tap (Click) | Hold (Function) | Double Tap |
 | :--- | :--- | :--- | :--- | :--- |
-| **Top Left** | `ZOOM` | Click Centrale | **Mod. Pinch Zoom** | - |
-| **Mid Left** | `SCROLL` | Click Centrale | **Mod. Drag Scroll** | **Home** (2x) / **End** (3x) |
-| **Bot Left** | `LMB` | Click Sinistro | - | - |
-| **Top Right** | `MEDIA` | Indietro (Btn 4) | **Layer Media** | **Layer Playback** |
-| **Mid Right** | `RMB` | Click Destro | - | - |
-| **Bot Right** | `NAV` | Avanti (Btn 5) | **Navigazione Desktop** | - |
+| **Top Left** | `ZOOM` | Middle Click | **Zoom Mode** | - |
+| **Mid Left** | `SCROLL` | Middle Click | **Drag Scroll Mode** | **Home** (2x) / **End** (3x) |
+| **Bot Left** | `LMB` | Left Click | - | - |
+| **Top Right** | `MEDIA` | Back (Btn 4) | **Media Layer** | **Playback Layer** |
+| **Mid Right** | `RMB` | Right Click | - | - |
+| **Bot Right** | `NAV` | Forward (Btn 5) | **Desktop Nav** | - |
 
-### Layer Playback (Top Right 2x)
-Controlli dedicati per la fruizione di video/musica.
-- **Sfera**: Cursore Standard.
-- **Top Left**: Indietro 10s.
-- **Mid Right**: Avanti 10s.
-- **Bot Left**: Play/Pausa.
-- **Top Right**: Esci dal Layer.
+### Playback Layer (Top Right 2x)
+Dedicated controls for video/music consumption.
+- **Ball**: Standard Cursor.
+- **Top Left**: Rewind 10s.
+- **Mid Right**: Forward 10s.
+- **Bot Left**: Play/Pause.
+- **Top Right**: Exit Layer.
 
 ---
 
-## Dettagli Tecnici
+## Technical Details
 
-- **Poll Rate**: 1ms (1000Hz) per una risposta istantanea.
-- **Libreria Matematica**: Utilizza `<math.h>` per curve di accelerazione complesse.
-- **Ottimizzazione Wayland**: Tuning specifico per eventi di scroll ad alta risoluzione nei compositor Wayland.
+- **Poll Rate**: 1ms (1000Hz) for instant response.
+- **Math Library**: Uses `<math.h>` for complex acceleration curves.
+- **Wayland Optimization**: Tuned specifically for high-resolution scroll events in Wayland compositors.
 
-## Compilazione
+## Compiling
 
-Questo firmware include logica C complessa. Compilare usando la CLI standard di QMK:
+This firmware includes complex C logic. Compile using the standard QMK CLI:
 
 ```bash
 qmk compile -kb ploopyco/madromys -km gorlix
 ```
 
-*Nota: Richiede QMK Firmware 0.22+*
+*Note: Requires QMK Firmware 0.22+*
