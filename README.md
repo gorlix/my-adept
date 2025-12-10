@@ -27,7 +27,7 @@ Optimized for **Linux (KDE Plasma/Wayland)** power users, focusing on fluid navi
 ### Desktop & Media Navigation
 - **Desktop Switcher**: Hold **Bot Right** (`NAV`) and flick the ball Left/Right to switch virtual desktops (Standard KDE shortcuts).
 - **Mission Control**: Hold `NAV` and flick Up/Down for window overview.
-- **Activity Switching**: Click once then Hold **Bot Right** (`NAV`) and flick Up/Down (`Ctrl+A` / `Ctrl+Shift+A`).
+- **Activity Switching**: Click once then Hold **Bot Right** (`NAV`) and flick Up/Down (`Meta+A` / `Meta+Shift+A`).
 - **Media Mode**: Hold **Top Right** (`MEDIA`) to control Volume (Up/Down) or Brightness (Left/Right) via ball movement.
 
 ---

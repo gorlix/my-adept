@@ -255,15 +255,15 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         nav_acum_y += mouse_report.y;
 
         if (timer_elapsed(last_nav_time) > NAV_COOLDOWN) {
-             // Up (Negative Y) -> Ctrl + A
+             // Up (Negative Y) -> Meta + A
             if (nav_acum_y < -NAV_THRESHOLD) {
-                tap_code16(LCTL(KC_A));
+                tap_code16(LGUI(KC_A));
                 last_nav_time = timer_read();
                 nav_acum_y = 0;
             }
-            // Down (Positive Y) -> Ctrl + Shift + A
+            // Down (Positive Y) -> Meta + Shift + A
             else if (nav_acum_y > NAV_THRESHOLD) {
-                tap_code16(LCTL(LSFT(KC_A)));
+                tap_code16(LGUI(LSFT(KC_A)));
                 last_nav_time = timer_read();
                 nav_acum_y = 0;
             }
