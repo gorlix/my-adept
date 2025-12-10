@@ -27,6 +27,7 @@ Optimized for **Linux (KDE Plasma/Wayland)** power users, focusing on fluid navi
 ### Desktop & Media Navigation
 - **Desktop Switcher**: Hold **Bot Right** (`NAV`) and flick the ball Left/Right to switch virtual desktops (Standard KDE shortcuts).
 - **Mission Control**: Hold `NAV` and flick Up/Down for window overview.
+- **Activity Switching**: Click once then Hold **Bot Right** (`NAV`) and flick Up/Down (`Ctrl+A` / `Ctrl+Shift+A`).
 - **Media Mode**: Hold **Top Right** (`MEDIA`) to control Volume (Up/Down) or Brightness (Left/Right) via ball movement.
 
 ---
@@ -55,7 +56,7 @@ This keymap introduces significant logic changes compared to the stock Ploopy fi
 | **Bot Left** | `LMB` | Left Click | - | - |
 | **Top Right** | `MEDIA` | Back (Btn 4) | **Media Layer** | **Playback Layer** |
 | **Mid Right** | `RMB` | Right Click | - | - |
-| **Bot Right** | `NAV` | Forward (Btn 5) | **Desktop Nav** | - |
+| **Bot Right** | `NAV` | - | **Desktop Nav** | **Activity Nav** (Click + Hold) |
 
 ### Playback Layer (Top Right 2x)
 Dedicated controls for video/music consumption.

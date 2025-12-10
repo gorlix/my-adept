@@ -3,15 +3,16 @@
 
 // --- CUSTOM KEYCODE DEFINITIONS ---
 enum custom_keycodes {
-    DESDESK_NAV = SAFE_RANGE,
-    CUSTOM_DRAG_SCROLL,
+    // DESDESK_NAV removed (replaced by TD)
+    CUSTOM_DRAG_SCROLL = SAFE_RANGE,
     ZOOM_BTN3
 };
 
 // --- TAP DANCE ENUMERATION ---
 enum {
     TD_SCROLL_CLICK,
-    TD_MEDIA_CTRL
+    TD_MEDIA_CTRL,
+    TD_NAV_ACTIVITY
 };
 
 // --- LAYER DEFINITIONS ---
@@ -26,6 +27,7 @@ enum layers {
 
 // --- STATE VARIABLES ---
 static bool is_nav_mode = false;
+static bool is_activity_mode = false;
 static bool is_scroll_mode = false;
 static bool is_zoom_mode = false;
 static uint16_t last_nav_time = 0;
@@ -95,9 +97,41 @@ void media_click_reset(tap_dance_state_t *state, void *user_data) {
     }
 }
 
+// --- NAV ACTIVITY TAP DANCE ---
+void nav_activity_finished(tap_dance_state_t *state, void *user_data) {
+    if (state->count == 1) {
+        if (state->pressed) {
+            // Hold: Desktop Navigation (existing)
+            is_nav_mode = true;
+            nav_acum_x = 0;
+            nav_acum_y = 0;
+        } else {
+             // Tap: You might want a default click or keycode here if needed.
+             // For now, let's say single tap does nothing or maybe a safe default?
+             // Since previous behavior for DESDESK_NAV was just a keycode that triggered nav mode on press,
+             // it didn't have a tap action.
+             // If the user previously only held it, maybe single tap can be empty or something useful.
+             // Let's assume it only has Hold functions for now as per request.
+        }
+    } else if (state->count == 2) {
+        if (state->pressed) {
+            // Click + Hold: Activity Navigation
+            is_activity_mode = true; 
+            nav_acum_x = 0;
+            nav_acum_y = 0;
+        }
+    }
+}
+
+void nav_activity_reset(tap_dance_state_t *state, void *user_data) {
+    is_nav_mode = false;
+    is_activity_mode = false;
+}
+
 tap_dance_action_t tap_dance_actions[] = {
     [TD_SCROLL_CLICK] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, scroll_click_finished, scroll_click_reset),
-    [TD_MEDIA_CTRL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, media_click_finished, media_click_reset)
+    [TD_MEDIA_CTRL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, media_click_finished, media_click_reset),
+    [TD_NAV_ACTIVITY] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, nav_activity_finished, nav_activity_reset)
 };
 
 // --- LAYOUT DEFINITIONS ---
@@ -108,7 +142,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_BASE] = LAYOUT(
         ZOOM_BTN3,              TD(TD_MEDIA_CTRL),            // Top Left, Top Right
         TD(TD_SCROLL_CLICK),    QK_MOUSE_BUTTON_2,            // Mid Left, Mid Right
-        QK_MOUSE_BUTTON_1,      DESDESK_NAV                   // Bot Left, Bot Right
+        QK_MOUSE_BUTTON_1,      TD(TD_NAV_ACTIVITY)           // Bot Left, Bot Right
     ),
     
     // Media Layer - Transparent (handled via C code logic)
@@ -127,15 +161,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // --- KEYCODE LOGIC ---
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
-        case DESDESK_NAV:
-            if (record->event.pressed) {
-                is_nav_mode = true;
-                nav_acum_x = 0;
-                nav_acum_y = 0;
-            } else {
-                is_nav_mode = false;
-            }
-            return false; // Prevent sending keycode to host
+        // DESDESK_NAV case removed
+
 
         case ZOOM_BTN3:
             if (record->event.pressed) {
@@ -219,6 +246,29 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         }
 
         // Lock cursor movement
+        mouse_report.x = 0;
+        mouse_report.y = 0;
+    }
+
+    // 1.5 ACTIVITY NAVIGATION MODE
+    else if (is_activity_mode) {
+        nav_acum_y += mouse_report.y;
+
+        if (timer_elapsed(last_nav_time) > NAV_COOLDOWN) {
+             // Up (Negative Y) -> Ctrl + A
+            if (nav_acum_y < -NAV_THRESHOLD) {
+                tap_code16(LCTL(KC_A));
+                last_nav_time = timer_read();
+                nav_acum_y = 0;
+            }
+            // Down (Positive Y) -> Ctrl + Shift + A
+            else if (nav_acum_y > NAV_THRESHOLD) {
+                tap_code16(LCTL(LSFT(KC_A)));
+                last_nav_time = timer_read();
+                nav_acum_y = 0;
+            }
+        }
+        
         mouse_report.x = 0;
         mouse_report.y = 0;
     }
